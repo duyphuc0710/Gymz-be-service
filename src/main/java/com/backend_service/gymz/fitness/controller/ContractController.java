@@ -27,7 +27,8 @@ public class ContractController {
     private final ContractService contractService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('CONTRACT:CREATE:ALL')")
+    // @PreAuthorize("hasAuthority('CONTRACT:CREATE:ALL')")
+    @PreAuthorize("hasRole('OWNER')")
     @Operation(summary = "Create new contract")
     public ResponseData<ContractResponse> createContract(@Valid @RequestBody ContractCreateRequest req) {
         log.info("Creating contract: {}", req);

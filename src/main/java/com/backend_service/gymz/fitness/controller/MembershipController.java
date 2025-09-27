@@ -63,7 +63,9 @@ public class MembershipController {
     @GetMapping
     @Operation(summary = "Get all memberships")
     // All roles can view the list of memberships
-    @PreAuthorize("hasAuthority('MEMBERSHIP:READ:ALL')")
+    // @PreAuthorize("hasAuthority('MEMBERSHIP:READ:ALL')")
+    @PreAuthorize("hasRole('ROLE_OWNER')")
+
     public ResponseData<MembershipPageResponse> getAllMemberships(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,

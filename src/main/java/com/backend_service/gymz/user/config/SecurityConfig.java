@@ -37,11 +37,11 @@ public class SecurityConfig {
         "/", "/login", "/dashboard", "/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/test/public",
         "/css/**", "/js/**", "/images/**"
     };
-    private final String jwkSetUri = "http://auth.nsa2.com:9000/realms/nsa2-realm/protocol/openid-connect/certs";
-
+    // private final String jwkSetUri = "http://auth.nsa2.com:9000/realms/nsa2-realm/protocol/openid-connect/certs";
+    private final String jwkSetUri = "http://localhost:9000/realms/nsa2-realm/protocol/openid-connect/certs";
 
     private final CustomizeUserDetailsService customUserDetailsService;
-    private final CustomizeRequestFilter customizeRequestFilter;
+    // private final CustomizeRequestFilter customizeRequestFilter;
 
     // @Bean
     // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
