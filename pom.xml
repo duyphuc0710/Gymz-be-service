@@ -58,6 +58,7 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- oauth -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
@@ -65,6 +66,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+
+		<!-- spring gateaway -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-gateway-mvc</artifactId>
+			<version>4.3.1</version>
 		</dependency>
 
 		<dependency>

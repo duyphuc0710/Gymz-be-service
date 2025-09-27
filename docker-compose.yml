@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   elasticsearch:
     image: elasticsearch:8.17.1
@@ -45,9 +43,48 @@ services:
     networks:
       - elk-network
 
+  keycloak-postgresql:
+    image: postgres:17
+    container_name: keycloak-postgresql
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 5430:5432
+    networks:
+      - keycloak-network
+
+  keycloak:
+    image: bitnami/keycloak:26.1.4-debian-12-r0
+    container_name: keycloak
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: 123456
+      KC_SPI_ADMIN_REALM: master
+      KEYCLOAK_HTTP_RELATIVE_PATH: /
+      DB_VENDOR: POSTGRES
+      DB_ADDR: keycloak-postgresql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+    ports:
+      - 9000:8080
+    depends_on:
+      - keycloak-postgresql
+    networks:
+      - keycloak-network
+
 networks:
   elk-network:
     driver: bridge
-
+  keycloak-network:
+    driver: bridge
+    
 volumes:
   elastic_data: {}
+  pg_data:
+    driver: local
