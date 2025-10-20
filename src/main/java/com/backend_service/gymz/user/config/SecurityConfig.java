@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,10 +42,12 @@ public class SecurityConfig {
     private final String jwkSetUri = "http://localhost:9000/realms/nsa2-realm/protocol/openid-connect/certs";
 
     private final CustomizeUserDetailsService customUserDetailsService;
-    // private final CustomizeRequestFilter customizeRequestFilter;
+    private final CustomizeRequestFilter customizeRequestFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     // @Bean
-    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    // // @Order(1)
+    // public SecurityFilterChain jwtFilterAuthChain(HttpSecurity http) throws Exception {
     //     http
     //         .csrf(csrf -> csrf.disable())
     //         .authorizeHttpRequests(auth -> auth
@@ -60,27 +63,113 @@ public class SecurityConfig {
     // }
 
     
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(auth ->
-                        auth
-                            .requestMatchers(WHITELIST).permitAll()
-                            .anyRequest().authenticated()
-                )
-                .oauth2Login(Customizer.withDefaults())  // Enables OAuth2 login with success handler
-                .oauth2Client(Customizer.withDefaults()) // Enables OAuth2 client
-                .csrf(csrf -> csrf.disable())  // Disable CSRF for APIs
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
-                .oauth2ResourceServer(oauth2 -> oauth2
-                    .jwt(jwt -> jwt
-                        .jwtAuthenticationConverter(nsa2AuthenticationConverter())
-                        .jwkSetUri(jwkSetUri)
-                    )
-                ); // Enable OAuth2 Resource Server with JWT
+    // @Bean
+    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    //     http
+    //             .authorizeHttpRequests(auth ->
+    //                     auth
+    //                         .requestMatchers(WHITELIST).permitAll()
+    //                         .anyRequest().authenticated()
+    //             )
+    //             .oauth2Login(Customizer.withDefaults())  // Enables OAuth2 login with success handler
+    //             .oauth2Client(Customizer.withDefaults()) // Enables OAuth2 client
+    //             .csrf(csrf -> csrf.disable())  // Disable CSRF for APIs
+    //             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+    //             .oauth2ResourceServer(oauth2 -> oauth2
+    //                 .jwt(jwt -> jwt
+    //                     .jwtAuthenticationConverter(nsa2AuthenticationConverter())
+    //                     .jwkSetUri(jwkSetUri)
+    //                 )
+    //             ); // Enable OAuth2 Resource Server with JWT
 
-        return http.build();
-    }
+    //     return http.build();
+    // }
+
+    // ===== CHAIN 1: Authentication từ DB (HS256) =====
+    // @Bean
+    // @Order(1)
+    // public SecurityFilterChain jwtFilterAuthChain(HttpSecurity http) throws Exception {
+    //     http
+    //         .securityMatcher("/api/auth/**") // tất cả API login/register
+    //         .csrf(csrf -> csrf.disable())
+    //         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+    //         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    //         .authenticationProvider(authenticationProvider())
+    //         .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
+    //     return http.build();
+    // }
+
+    // // ===== CHAIN 2: OAuth2 / Keycloak (RS256) =====
+    // @Bean
+    // @Order(2)
+    // public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
+    //     http
+    //         .authorizeHttpRequests(auth -> auth
+    //             .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+    //             .anyRequest().authenticated()
+    //         )
+    //         .csrf(csrf -> csrf.disable())
+    //         .cors(Customizer.withDefaults())
+    //         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    //         .oauth2Login(Customizer.withDefaults())
+    //         .oauth2Client(Customizer.withDefaults())
+    //         .oauth2ResourceServer(oauth2 -> oauth2
+    //             .jwt(jwt -> jwt
+    //                 .jwtAuthenticationConverter(nsa2AuthenticationConverter())
+    //                 .jwkSetUri(jwkSetUri)
+    //             )
+    //         )
+    //         .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+
+    //     return http.build();
+    // }
+
+    // ===== CHAIN 1: Auth endpoints (login/register) =====
+@Bean
+@Order(1)
+public SecurityFilterChain authEndpointsChain(HttpSecurity http) throws Exception {
+    http
+        .securityMatcher("/api/auth/**")
+        .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authenticationProvider(authenticationProvider())
+        .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+}
+
+// ===== CHAIN 2: Protected endpoints - HỖ TRỢ CẢ 2 LOẠI JWT =====
+@Bean
+@Order(2)
+public SecurityFilterChain protectedEndpointsChain(HttpSecurity http) throws Exception {
+    http
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+            .anyRequest().authenticated()
+        )
+        .csrf(csrf -> csrf.disable())
+        .cors(Customizer.withDefaults())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        
+        // HỖ TRỢ JWT TỪ DATABASE (HS256)
+        .authenticationProvider(authenticationProvider())
+        .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class)
+        
+        // HỖ TRỢ OAUTH2/KEYCLOAK (RS256)
+        .oauth2Login(Customizer.withDefaults())
+        .oauth2Client(Customizer.withDefaults())
+        .oauth2ResourceServer(oauth2 -> oauth2
+            .jwt(jwt -> jwt
+                .jwtAuthenticationConverter(nsa2AuthenticationConverter())
+                .jwkSetUri(jwkSetUri)
+            )
+        )
+        .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+
+    return http.build();
+}
 
 
     @Bean

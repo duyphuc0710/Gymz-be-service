@@ -242,7 +242,7 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
             .build();
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -250,7 +250,6 @@ public class WorkoutPlanServiceImpl implements WorkoutPlanService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo WorkoutProgramPageResponse từ page và danh sách response
     private WorkoutProgramPageResponse buildWorkoutProgramPageResponse(Page<WorkoutPlanEntity> workoutPlanPage, List<WorkoutProgramResponse> workoutProgramResponses) {
         WorkoutProgramPageResponse response = new WorkoutProgramPageResponse();
         response.setPageNumber(workoutPlanPage.getNumber());

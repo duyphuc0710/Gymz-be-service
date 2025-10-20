@@ -102,7 +102,7 @@ public class ExerciseServiceImpl implements ExerciseService {
                 .build();
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -110,7 +110,6 @@ public class ExerciseServiceImpl implements ExerciseService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo ExercisePageResponse từ page và danh sách response
     private ExercisePageResponse buildExercisePageResponse(Page<ExerciseEntity> exercisePage, List<ExerciseResponse> exerciseResponses) {
         ExercisePageResponse response = new ExercisePageResponse();
         response.setPageNumber(exercisePage.getNumber());

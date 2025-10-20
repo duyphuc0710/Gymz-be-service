@@ -120,7 +120,7 @@ public class MembershipRecordServiceImpl implements MembershipRecordService {
         return buildMembershipRecordPageResponse(membershipPage, membershipResponses);
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -128,7 +128,6 @@ public class MembershipRecordServiceImpl implements MembershipRecordService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo MembershipRecordPageResponse từ page và danh sách response
     private MembershipRecordPageResponse buildMembershipRecordPageResponse(Page<MembershipRecord> membershipPage, List<MembershipRecordResponse> membershipResponses) {
         MembershipRecordPageResponse response = new MembershipRecordPageResponse();
         response.setPageNumber(membershipPage.getNumber());

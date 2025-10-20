@@ -130,7 +130,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         return buildEquipmentPageResponse(equipmentPage, equipmentResponses);
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -138,7 +138,6 @@ public class EquipmentServiceImpl implements EquipmentService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo EquipmentPageReponse từ page và danh sách response
     private EquipmentPageReponse buildEquipmentPageResponse(Page<EquipmentEntity> equipmentPage, List<EquipmentResponse> equipmentResponses) {
         EquipmentPageReponse response = new EquipmentPageReponse();
         response.setPageNumber(equipmentPage.getNumber());

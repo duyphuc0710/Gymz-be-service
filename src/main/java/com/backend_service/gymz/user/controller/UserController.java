@@ -78,37 +78,35 @@ public class UserController {
     @Operation(summary = "Update user")
     @PutMapping
     @PreAuthorize("hasAuthority('USER:UPDATE:SELF') or hasAuthority('USER:UPDATE:ALL')")
-    public ResponseData<Object> updateUser(@RequestBody UserUpdateRequest request) {
+    public ResponseData<UserResponse> updateUser(@RequestBody UserUpdateRequest request) {
 
-        log.info("update user request: {}", request);
-        userService.update(request);
-        // UserResponse date = userService.update(request);
+        log.info("Updating user with id: {}", request.getId());
+        UserResponse data = userService.update(request);
 
-        return new ResponseData<>(HttpStatus.OK.value(), "update user");
+        return new ResponseData<>(HttpStatus.OK.value(), "User updated successfully", data);
     }
 
     @Operation(summary = "Delete user")
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasAuthority('USER:DELETE:ALL') or hasRole('OWNER')")
-    public ResponseData<Object> deleteUser(@PathVariable Long userId) {
-        log.info("Deleting user: {}", userId);
+    public ResponseData<UserResponse> deleteUser(@PathVariable Long userId) {
+        log.info("Deleting user with id: {}", userId);
 
-        userService.deleteById(userId);
+        UserResponse data = userService.deleteById(userId);
 
-        return new ResponseData<>(HttpStatus.OK.value(), "delete user");
+        return new ResponseData<>(HttpStatus.OK.value(), "User deleted successfully", data);
     }
 
     @Operation(summary = "Change Password", description = "API change password for user to database")
     @PatchMapping("/change-pwd")
-    // @PreAuthorize("hasAuthority('USER:UPDATE:SELF') or hasAuthority('USER:UPDATE:ALL')")
-    public ResponseData<Object> changePassword(@RequestBody @Valid UserPasswordRequest request) {
+    @PreAuthorize("hasAuthority('USER:UPDATE:SELF') or hasAuthority('USER:UPDATE:ALL')")
+    public ResponseData<UserResponse> changePassword(@RequestBody @Valid UserPasswordRequest request) {
         
-        log.info("Changing password for user: {}", request);
+        log.info("Changing password for user with id: {}", request.getId());
 
-        userService.changePwd(request);
+        UserResponse data = userService.changePwd(request);
 
-        log.info("Password changed successfully for user: {}", request.getId());
-        return new ResponseData<>(HttpStatus.NO_CONTENT.value(), "Password updated successfully");
+        return new ResponseData<>(HttpStatus.OK.value(), "Password updated successfully", data);
     }
 
 }

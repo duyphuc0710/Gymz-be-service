@@ -103,7 +103,7 @@ public class MembershipServiceImpl implements MembershipService {
         return buildMembershipPageResponse(membershipPage, membershipResponses);
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -111,7 +111,6 @@ public class MembershipServiceImpl implements MembershipService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo MembershipPageResponse từ page và danh sách response
     private MembershipPageResponse buildMembershipPageResponse(Page<MembershipEntity> membershipPage, List<MembershipResponse> membershipResponses) {
         MembershipPageResponse response = new MembershipPageResponse();
         response.setPageNumber(membershipPage.getNumber());

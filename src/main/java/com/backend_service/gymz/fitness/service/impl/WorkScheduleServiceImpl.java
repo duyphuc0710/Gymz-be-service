@@ -208,7 +208,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
             .build();
     }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -216,7 +216,6 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo WorkSchedulePageResponse từ page và danh sách response
     private WorkSchedulePageResponse buildWorkSchedulePageResponse(Page<WorkScheduleEntity> workSchedulePage, List<WorkScheduleResponse> workScheduleResponses) {
         WorkSchedulePageResponse response = new WorkSchedulePageResponse();
         response.setPageNumber(workSchedulePage.getNumber());

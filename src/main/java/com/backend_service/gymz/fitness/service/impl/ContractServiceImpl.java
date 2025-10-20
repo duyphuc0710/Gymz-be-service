@@ -155,7 +155,7 @@ public class ContractServiceImpl implements ContractService {
         return contractRepository.existsByNameAndIdNot(name, id);
     }
 
-
+    // Method helper
     private ContractResponse convertToResponse(ContractEntity contract) {
         ContractResponse response = new ContractResponse();
         response.setName(contract.getName());

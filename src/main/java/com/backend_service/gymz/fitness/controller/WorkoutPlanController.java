@@ -66,7 +66,7 @@ public class WorkoutPlanController {
 
     @GetMapping
     // All roles can view the list of workout plans
-    @PreAuthorize("hasAuthority('WORKOUT_PLAN:READ:ALL')")
+    @PreAuthorize("hasRole('ROLE_OWNER')")
     @Operation(summary = "Get all workout plans")
     public ResponseData<WorkoutProgramPageResponse> getAllWorkoutPlans(
         @RequestParam(defaultValue = "0") int page,

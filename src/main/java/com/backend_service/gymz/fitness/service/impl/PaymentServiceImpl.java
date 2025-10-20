@@ -283,7 +283,7 @@ public List<PaymentResponse> findPaymentByUserId(Long userId) {
     return payments.stream().map(this::convertToResponse).toList();
 }
 
-    // Helper: Tạo Pageable
+    // Method helper
     private Pageable buildPageable(int page, int size, String sortBy, String direction, boolean ignoreCase) {
         Sort.Order order = new Sort.Order(Sort.Direction.fromString(direction), sortBy);
         if (ignoreCase) order = order.ignoreCase();
@@ -291,7 +291,6 @@ public List<PaymentResponse> findPaymentByUserId(Long userId) {
         return PageRequest.of(page, size, sort);
     }
 
-    // Helper: Tạo PaymentPageReponse từ page và danh sách response
     private PaymentPageResponse buildPaymentPageResponse(Page<PaymentEntity> paymentPage, List<PaymentResponse> paymentResponses) {
         PaymentPageResponse response = new PaymentPageResponse();
         response.setPageNumber(paymentPage.getNumber());

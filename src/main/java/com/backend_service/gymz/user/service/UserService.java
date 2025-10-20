@@ -10,11 +10,11 @@ import com.backend_service.gymz.user.dto.Response.user.UserResponse;
 public interface UserService {
     UserResponse save(UserCreateRequest request);
 
-    void update(UserUpdateRequest request);
+    UserResponse update(UserUpdateRequest request);
 
-    void changePwd(UserPasswordRequest request);
+    UserResponse changePwd(UserPasswordRequest request);
 
-    void deleteById(Long id);
+    UserResponse deleteById(Long id);
 
     UserPageResponse findAllUsers(int page, int size, String sortBy, String direction, boolean ignoreCase);
     

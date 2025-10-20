@@ -50,26 +50,20 @@ public class UserServiceImpl implements UserService {
         log.info("Added addresses to user: {}", user.getAddresses());
 
         if (req.getRoleIds() != null && !req.getRoleIds().isEmpty()) {
-            List<Role> roles = roleRepository.findAllById(req.getRoleIds());
-            for (Role role : roles) {
-                UserHasRole userHasRole = new UserHasRole();
-                userHasRole.setUser(user);
-                userHasRole.setRole(role);
-                user.getUserRoles().add(userHasRole);
-            }
+            assignRolesToUser(user, req.getRoleIds());
             log.info("Assigned roles to user: {}", req.getRoleIds());
         }
 
-        userRepository.save(user);
-        log.info("Saved user successfully: {}", user);
+        UserEntity savedUser = userRepository.save(user);
+        log.info("Successfully created user with id: {}", savedUser.getId());
 
-        return mapToUserResponse(user);
+        return mapToUserResponse(savedUser);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(UserUpdateRequest req) {
-        log.info("Updating user {} ", req);
+    public UserResponse update(UserUpdateRequest req) {
+        log.info("Updating user with id: {}", req.getId());
 
         UserEntity user = getUserEntity(req.getId());
         updateUserEntity(user, req);
@@ -82,79 +76,75 @@ public class UserServiceImpl implements UserService {
 
         if (req.getRoleIds() != null) {
             user.getUserRoles().clear();
-            List<Role> roles = roleRepository.findAllById(req.getRoleIds());
-            for (Role role : roles) {
-                UserHasRole userHasRole = new UserHasRole();
-                userHasRole.setUser(user);
-                userHasRole.setRole(role);
-                user.getUserRoles().add(userHasRole);
-            }
+            assignRolesToUser(user, req.getRoleIds());
             log.info("Updated roles for user: {}", req.getRoleIds());
         }
 
-        userRepository.save(user);
+        UserEntity updatedUser = userRepository.save(user);
+        log.info("Successfully updated user with id: {}", updatedUser.getId());
 
-        log.info("Updated user successful {} ", req);
+        return mapToUserResponse(updatedUser);
     }
 
     @Override
-    public void changePwd(UserPasswordRequest req) {
-        log.info("Changing password for user: {}", req);
+    @Transactional(rollbackFor = Exception.class)
+    public UserResponse changePwd(UserPasswordRequest req) {
+        log.info("Changing password for user with id: {}", req.getId());
 
         UserEntity user = getUserEntity(req.getId());
         if (req.getPassword().equals(req.getConfirmPassword())) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
         }
 
-        userRepository.save(user);
-        log.info("Password changed successfully for user: {}", user);
+        UserEntity updatedUser = userRepository.save(user);
+        log.info("Successfully changed password for user with id: {}", updatedUser.getId());
+
+        return mapToUserResponse(updatedUser);
     }
 
     @Override
-    public void deleteById(Long id) {
-        log.info("Deleting user: {}", id);
+    @Transactional(rollbackFor = Exception.class)
+    public UserResponse deleteById(Long id) {
+        log.info("Deleting user with id: {}", id);
 
         UserEntity user = getUserEntity(id);
         user.setStatus(UserStatus.INACTIVE);
 
-        userRepository.save(user);
-        log.info("Deleted user id: {}", id);
+        UserEntity deletedUser = userRepository.save(user);
+        log.info("Successfully deleted user with id: {}", id);
+
+        return mapToUserResponse(deletedUser);
     }
 
     @Override
     public UserPageResponse findAllUsers(int page, int size, String sortBy, String direction, boolean ignoreCase) {
-        log.info("Get all users");
+        log.info("Getting all users with paging");
 
         Pageable pageable = buildPageable(page, size, sortBy, direction, ignoreCase);
-
         Page<UserEntity> userEntities = userRepository.findAll(pageable);
 
-        List<UserResponse> userList = userEntities.stream()
+        List<UserResponse> userList = userEntities.getContent().stream()
             .map(this::mapToUserResponse)
             .toList();
 
-        UserPageResponse response = new UserPageResponse();
-        response.setPageNumber(pageable.getPageNumber());
-        response.setPageSize(pageable.getPageSize());
-        response.setTotalElements(userEntities.getTotalElements());
-        response.setTotalPages(userEntities.getTotalPages());
-        response.setUsers(userList);
-
-        return response;
+        return buildUserPageResponse(userEntities, userList);
     }
 
     @Override
     public UserResponse findById(Long id) {
-        log.info("Find user by id: {}", id);
+        log.info("Finding user by id: {}", id);
 
         UserEntity userEntity = getUserEntity(id);
-        return mapToUserResponse(userEntity);
+        UserResponse response = mapToUserResponse(userEntity);
+        log.info("Successfully found user with id: {}", response.getId());
+        
+        return response;
     }
 
-    // method helper
+    // Helper methods
     private UserEntity getUserEntity(Long id) {
         return userRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
     }
 
     private UserEntity buildUserEntity(UserCreateRequest req) {
@@ -193,6 +183,16 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private void assignRolesToUser(UserEntity user, List<Integer> roleIds) {
+        List<Role> roles = roleRepository.findAllById(roleIds);
+        for (Role role : roles) {
+            UserHasRole userHasRole = new UserHasRole();
+            userHasRole.setUser(user);
+            userHasRole.setRole(role);
+            user.getUserRoles().add(userHasRole);
+        }
+    }
+
     private UserResponse mapToUserResponse(UserEntity entity) {
         return UserResponse.builder()
             .id(entity.getId())
@@ -211,5 +211,15 @@ public class UserServiceImpl implements UserService {
         if (ignoreCase) order = order.ignoreCase();
         Sort sort = Sort.by(order);
         return PageRequest.of(page, size, sort);
+    }
+
+    private UserPageResponse buildUserPageResponse(Page<UserEntity> userEntities, List<UserResponse> userList) {
+        UserPageResponse response = new UserPageResponse();
+        response.setPageNumber(userEntities.getNumber());
+        response.setPageSize(userEntities.getSize());
+        response.setTotalElements(userEntities.getTotalElements());
+        response.setTotalPages(userEntities.getTotalPages());
+        response.setUsers(userList);
+        return response;
     }
 }
