@@ -34,187 +34,194 @@ import lombok.extern.slf4j.Slf4j;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    private static final String[] WHITELIST = {
-        "/", "/login", "/dashboard", "/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/test/public",
+    // Public endpoints that don't require authentication
+    private static final String[] PUBLIC_ENDPOINTS = {
+        "/", "/login", "/dashboard", "/api/auth/**", 
+        "/swagger-ui/**", "/v3/api-docs/**", "/api/test/public",
         "/css/**", "/js/**", "/images/**"
     };
-    // private final String jwkSetUri = "http://auth.nsa2.com:9000/realms/nsa2-realm/protocol/openid-connect/certs";
+
     private final String jwkSetUri = "http://localhost:9000/realms/nsa2-realm/protocol/openid-connect/certs";
 
     private final CustomizeUserDetailsService customUserDetailsService;
     private final CustomizeRequestFilter customizeRequestFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    // @Bean
-    // // @Order(1)
-    // public SecurityFilterChain jwtFilterAuthChain(HttpSecurity http) throws Exception {
-    //     http
-    //         .csrf(csrf -> csrf.disable())
-    //         .authorizeHttpRequests(auth -> auth
-    //             .requestMatchers(WHITELIST).permitAll()
-    //             .anyRequest().authenticated())
-    //         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    //         .authenticationProvider(authenticationProvider())
-    //         .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class);
-    //         // .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
-
-    //     return http.build();
-
-    // }
-
-    
-    // @Bean
-    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    //     http
-    //             .authorizeHttpRequests(auth ->
-    //                     auth
-    //                         .requestMatchers(WHITELIST).permitAll()
-    //                         .anyRequest().authenticated()
-    //             )
-    //             .oauth2Login(Customizer.withDefaults())  // Enables OAuth2 login with success handler
-    //             .oauth2Client(Customizer.withDefaults()) // Enables OAuth2 client
-    //             .csrf(csrf -> csrf.disable())  // Disable CSRF for APIs
-    //             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
-    //             .oauth2ResourceServer(oauth2 -> oauth2
-    //                 .jwt(jwt -> jwt
-    //                     .jwtAuthenticationConverter(nsa2AuthenticationConverter())
-    //                     .jwkSetUri(jwkSetUri)
-    //                 )
-    //             ); // Enable OAuth2 Resource Server with JWT
-
-    //     return http.build();
-    // }
-
-    // ===== CHAIN 1: Authentication từ DB (HS256) =====
-    // @Bean
-    // @Order(1)
-    // public SecurityFilterChain jwtFilterAuthChain(HttpSecurity http) throws Exception {
-    //     http
-    //         .securityMatcher("/api/auth/**") // tất cả API login/register
-    //         .csrf(csrf -> csrf.disable())
-    //         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-    //         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    //         .authenticationProvider(authenticationProvider())
-    //         .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class);
-
-    //     return http.build();
-    // }
-
-    // // ===== CHAIN 2: OAuth2 / Keycloak (RS256) =====
-    // @Bean
-    // @Order(2)
-    // public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
-    //     http
-    //         .authorizeHttpRequests(auth -> auth
-    //             .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-    //             .anyRequest().authenticated()
-    //         )
-    //         .csrf(csrf -> csrf.disable())
-    //         .cors(Customizer.withDefaults())
-    //         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-    //         .oauth2Login(Customizer.withDefaults())
-    //         .oauth2Client(Customizer.withDefaults())
-    //         .oauth2ResourceServer(oauth2 -> oauth2
-    //             .jwt(jwt -> jwt
-    //                 .jwtAuthenticationConverter(nsa2AuthenticationConverter())
-    //                 .jwkSetUri(jwkSetUri)
-    //             )
-    //         )
-    //         .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
-
-    //     return http.build();
-    // }
-
-    // ===== CHAIN 1: Auth endpoints (login/register) =====
-@Bean
-@Order(1)
-public SecurityFilterChain authEndpointsChain(HttpSecurity http) throws Exception {
-    http
-        .securityMatcher("/api/auth/**")
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authenticationProvider(authenticationProvider())
-        .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class);
-
-    return http.build();
-}
-
-// ===== CHAIN 2: Protected endpoints - HỖ TRỢ CẢ 2 LOẠI JWT =====
-@Bean
-@Order(2)
-public SecurityFilterChain protectedEndpointsChain(HttpSecurity http) throws Exception {
-    http
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-            .anyRequest().authenticated()
-        )
-        .csrf(csrf -> csrf.disable())
-        .cors(Customizer.withDefaults())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        
-        // HỖ TRỢ JWT TỪ DATABASE (HS256)
-        .authenticationProvider(authenticationProvider())
-        .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class)
-        
-        // HỖ TRỢ OAUTH2/KEYCLOAK (RS256)
-        .oauth2Login(Customizer.withDefaults())
-        .oauth2Client(Customizer.withDefaults())
-        .oauth2ResourceServer(oauth2 -> oauth2
-            .jwt(jwt -> jwt
-                .jwtAuthenticationConverter(nsa2AuthenticationConverter())
-                .jwkSetUri(jwkSetUri)
-            )
-        )
-        .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
-
-    return http.build();
-}
-
-
+    /**
+     * SECURITY FILTER CHAIN 1 - HIGHEST PRIORITY
+     * Purpose: OAuth2 Resource Server (API endpoints with Keycloak JWT)
+     * Handles: API requests with Bearer tokens (RS256 from Keycloak)
+     * Pattern: /api/** (excluding /api/auth/**)
+     * Session: Stateless
+     * Authentication: JWT validation via Keycloak JWK Set
+     */
     @Bean
-    public JwtAuthenticationConverter nsa2AuthenticationConverter() {
-        var converter = new JwtAuthenticationConverter();
+    @Order(1)
+    public SecurityFilterChain resourceServerFilterChain(HttpSecurity http) throws Exception {
+        log.info("Configuring Resource Server Filter Chain (Order 1)");
+        
+        http
+            .securityMatcher("/api/**")  // Match all API endpoints
+            .csrf(csrf -> csrf.disable())  // Disable CSRF for stateless APIs
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**", "/api/test/public").permitAll()  // Allow auth endpoints
+                .anyRequest().authenticated()  // All other API requests require authentication
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // No session creation
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .jwtAuthenticationConverter(keycloakJwtAuthenticationConverter())
+                    .jwkSetUri(jwkSetUri)
+                )
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            );
+
+        return http.build();
+    }
+
+    /**
+     * SECURITY FILTER CHAIN 2 - MEDIUM PRIORITY
+     * Purpose: OAuth2 Client (OAuth2 Login Flow)
+     * Handles: OAuth2/OIDC login redirects and authorization code flow
+     * Pattern: /oauth2/**, /login/oauth2/**
+     * Session: Stateful (required for OAuth2 authorization flow)
+     * Authentication: OAuth2 login with Keycloak
+     */
+    @Bean
+    @Order(2)
+    public SecurityFilterChain oauth2ClientFilterChain(HttpSecurity http) throws Exception {
+        log.info("Configuring OAuth2 Client Filter Chain (Order 2)");
+        
+        http
+            .securityMatcher("/oauth2/**", "/login/oauth2/**", "/authorized/**")
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()  // OAuth2 endpoints are public (Spring Security handles auth)
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // Session needed for OAuth2 flow
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .defaultSuccessUrl("/dashboard", true)
+                // You can add custom success handler here if needed
+                // .successHandler(customOAuth2SuccessHandler())
+            )
+            .oauth2Client(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    /**
+     * SECURITY FILTER CHAIN 3 - LOWEST PRIORITY (CATCH-ALL)
+     * Purpose: Traditional username/password authentication from database
+     * Handles: All remaining requests with custom JWT (HS256)
+     * Pattern: /** (catch-all for non-matched requests)
+     * Session: Stateless
+     * Authentication: UserDetailsService + Custom JWT Filter
+     */
+    @Bean
+    @Order(3)
+    public SecurityFilterChain databaseAuthFilterChain(HttpSecurity http) throws Exception {
+        log.info("Configuring Database Authentication Filter Chain (Order 3)");
+        
+        http
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authenticationProvider(databaseAuthenticationProvider())
+            .addFilterBefore(customizeRequestFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            );
+
+        return http.build();
+    }
+
+
+    // ============================================
+    // AUTHENTICATION CONVERTERS & PROVIDERS
+    // ============================================
+
+    /**
+     * JWT Authentication Converter for Keycloak tokens (RS256)
+     * Extracts authorities from Keycloak JWT claims
+     */
+    @Bean
+    public JwtAuthenticationConverter keycloakJwtAuthenticationConverter() {
+        log.debug("Creating Keycloak JWT Authentication Converter");
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(new CustomJwtGrantedAuthoritiesConverter());
         return converter;
     }
 
-    
+    /**
+     * Database Authentication Provider for username/password authentication
+     * Used by custom JWT filter for internal system authentication
+     */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(
-                "http://auth.nsa2.com:9000",  // Keycloak
-                "http://gateway.nsa2.com:8080" // Spring Cloud Gateway
-        ));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
+    @SuppressWarnings("deprecation")
+    public AuthenticationProvider databaseAuthenticationProvider() {
+        log.debug("Creating Database Authentication Provider");
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(passwordEncoder());
+        provider.setUserDetailsService(customUserDetailsService);
+        return provider;
     }
 
+    /**
+     * Authentication Manager - required for manual authentication
+     * Used in login endpoint to authenticate username/password
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    /**
+     * Password Encoder - BCrypt for secure password hashing
+     */
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(customUserDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {        
+    // ============================================
+    // CORS CONFIGURATION
+    // ============================================
 
-        // return NoOpPasswordEncoder.getInstance();
-                
-        return new BCryptPasswordEncoder();
+    /**
+     * CORS Configuration for all security filter chains
+     * Allows requests from Keycloak and Gateway
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        log.debug("Configuring CORS");
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of(
+                "http://localhost:9000",      // Keycloak local
+                "http://auth.nsa2.com:9000",  // Keycloak
+                "http://gateway.nsa2.com:8080", // Spring Cloud Gateway
+                "http://localhost:3000"       // Frontend (if needed)
+        ));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setMaxAge(3600L); // Cache preflight response for 1 hour
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
 }
