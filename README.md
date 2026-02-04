@@ -1,7 +1,7 @@
 # Gymz-backend-service
 Gymz backend-service with SpringBoot
 
-## Công nghệ sử dụng
+## Technologies Used
 
 - **Java 17**
 - **Spring Boot 3.5.4**
@@ -9,9 +9,9 @@ Gymz backend-service with SpringBoot
 - **Spring Data JPA**
 - **MySQL**
 - **Maven**
-- **BCrypt** (mã hóa mật khẩu)
+- **BCrypt** 
 
-## Cấu trúc dự án
+## Project Structure
 
 ```
 src/main/java/com/vnair/usermanagement/
@@ -24,33 +24,33 @@ src/main/java/com/vnair/usermanagement/
 └── UserManagementApiApplication.java
 ```
 
-## Cài đặt và chạy ứng dụng
+## Installation and Running the Application
 
-### Yêu cầu hệ thống
+### System Requirements
 
-- **Java 17** hoặc cao hơn
+- **Java 17** 
 - **Maven 3.6+**
-- **Docker** và **Docker Compose**
+- **Docker** 
 
-# Hướng dẫn sử dụng project
+# Project Guide
 
-## Bước 1: Khởi động ELK bằng Docker Compose
+## Step 1: Start ELK Stack with Docker Compose
 
-Chạy lệnh sau trong thư mục gốc của project để dựng ELK stack:
+Start the application using:
 
 ```powershell
 docker-compose up -d
 ```
 
-## Bước 2: Chạy project Spring Boot
+## Step 2: Run the Spring Boot Application
 
-Chạy lệnh sau để khởi động ứng dụng:
+Start the application using:
 
 ```powershell
 ./mvnw spring-boot:run
 ```
 
-Hoặc nếu đã cài đặt Maven trên máy:
+Or, if Maven is already installed on your system:
 
 ```powershell
 mvn spring-boot:run
